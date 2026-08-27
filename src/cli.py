@@ -122,6 +122,13 @@ def run(config_path: str, dry_run: bool = False) -> None:
                 status=camp_cfg.get("status", "PAUSED"),
                 special_ad_categories=camp_cfg.get("special_ad_categories", []),
                 daily_budget=camp_cfg.get("daily_budget"),
+                # bid_strategy phải khai báo ở Campaign khi dùng CBO
+                bid_strategy=(
+                    camp_cfg.get("bid_strategy", "LOWEST_COST_WITHOUT_CAP")
+                    if camp_cfg.get("daily_budget")
+                    else None
+                ),
+                bid_amount=camp_cfg.get("bid_amount"),
             )
             campaign_id = campaign["id"]
             print(f"  -> Campaign ID: {campaign_id}")
@@ -131,17 +138,16 @@ def run(config_path: str, dry_run: bool = False) -> None:
             if dry_run:
                 adset_id = "<sẽ-tạo>"
             else:
+                uses_campaign_budget = bool(camp_cfg.get("daily_budget"))
                 adset = create_adset(
                     account,
                     name=adset_cfg["name"],
                     campaign_id=campaign_id,
-                    # Chỉ truyền daily_budget ở đây khi KHÔNG dùng ngân sách cấp
-                    # Campaign (nếu camp_cfg đã có daily_budget thì để None,
-                    # AdSet dùng chung ngân sách campaign - CBO).
+                    # Chỉ truyền daily_budget/bid_strategy ở AdSet khi KHÔNG dùng
+                    # ngân sách cấp Campaign (CBO) - nếu dùng CBO thì 2 field này
+                    # đã khai báo ở create_campaign() rồi, để trống ở đây.
                     daily_budget=(
-                        adset_cfg.get("daily_budget")
-                        if not camp_cfg.get("daily_budget")
-                        else None
+                        None if uses_campaign_budget else adset_cfg.get("daily_budget")
                     ),
                     billing_event=adset_cfg.get("billing_event", "IMPRESSIONS"),
                     optimization_goal=adset_cfg.get(
@@ -149,8 +155,10 @@ def run(config_path: str, dry_run: bool = False) -> None:
                     ),
                     targeting=adset_cfg["targeting"],
                     status=adset_cfg.get("status", "PAUSED"),
-                    bid_strategy=adset_cfg.get(
-                        "bid_strategy", "LOWEST_COST_WITHOUT_CAP"
+                    bid_strategy=(
+                        None
+                        if uses_campaign_budget
+                        else adset_cfg.get("bid_strategy", "LOWEST_COST_WITHOUT_CAP")
                     ),
                     bid_amount=adset_cfg.get("bid_amount"),
                     # Chỉ dùng promoted_object khi tự khai báo rõ trong config
