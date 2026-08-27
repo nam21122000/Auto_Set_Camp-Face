@@ -50,6 +50,7 @@ def _build_creative(account, ad_cfg: dict):
             page_id=ad_cfg["page_id"],
             post_id=ad_cfg["existing_post_id"],
             name=name,
+            call_to_action_type=ad_cfg.get("call_to_action"),
         )
 
     if ad_cfg.get("existing_video_id"):
