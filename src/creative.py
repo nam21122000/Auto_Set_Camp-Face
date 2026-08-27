@@ -77,15 +77,26 @@ def create_creative_from_video(
     name: str,
     call_to_action_type: str = "SHOP_NOW",
     link: str = "",
+    cta_value: dict | None = None,
 ) -> AdCreative:
-    """Tạo creative mới dạng video (dùng cho các mẫu '-VIDEO-AI' như trong tài khoản)."""
+    """
+    Tạo creative mới dạng video (dùng cho các mẫu '-VIDEO-AI' như trong tài khoản).
+
+    cta_value: nếu cần tùy chỉnh nút CTA nâng cao (VD trỏ đến Messenger thay vì
+               link web), truyền thẳng dict value, ví dụ:
+               {"app_destination": "MESSENGER"}
+               Nếu để trống, mặc định dùng {"link": link} như bình thường.
+    """
+    if cta_value is None:
+        cta_value = {"link": link} if link else {}
+
     video_data = {
         "video_id": video_id,
         "message": message,
         "image_url": thumbnail_url,
         "call_to_action": {
             "type": call_to_action_type,
-            "value": {"link": link} if link else {},
+            "value": cta_value,
         },
     }
     object_story_spec = {
