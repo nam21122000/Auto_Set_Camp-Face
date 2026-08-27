@@ -16,6 +16,7 @@ def create_adset(
     bid_strategy: str = "LOWEST_COST_WITHOUT_CAP",
     bid_amount: int | None = None,
     promoted_object: dict | None = None,
+    destination_type: str | None = None,
 ) -> AdSet:
     """
     Tạo 1 ad set mới trong campaign đã cho.
@@ -24,15 +25,16 @@ def create_adset(
                   phân nên nhập nguyên giá trị VND, ví dụ 100000 = 100.000đ).
     billing_event: IMPRESSIONS, LINK_CLICKS, ...
     optimization_goal: POST_ENGAGEMENT, LINK_CLICKS, OFFSITE_CONVERSIONS,
-                        REACH, VIDEO_VIEWS, ...
+                        REACH, VIDEO_VIEWS, CONVERSATIONS (khi đích là Tin nhắn), ...
     bid_strategy: LOWEST_COST_WITHOUT_CAP (mặc định, để Facebook tự tối ưu giá),
                   LOWEST_COST_WITH_BID_CAP (phải kèm bid_amount = giá thầu tối đa),
                   COST_CAP (phải kèm bid_amount = mức chi phí mục tiêu).
     bid_amount: chỉ cần khi bid_strategy khác LOWEST_COST_WITHOUT_CAP.
-    promoted_object: bắt buộc với optimization_goal = POST_ENGAGEMENT/PAGE_LIKES,
-                      ví dụ {"page_id": "1294066237122353"} — cho Facebook biết
-                      đối tượng "chuyển đổi" chính là tương tác trên Page đó,
-                      tránh bị đòi hỏi phải gắn Pixel.
+    promoted_object: bắt buộc với optimization_goal = POST_ENGAGEMENT/PAGE_LIKES/
+                      CONVERSATIONS, ví dụ {"page_id": "1294066237122353"}.
+    destination_type: "MESSENGER" khi Vị trí chuyển đổi = Tin nhắn (Messenger),
+                       "WHATSAPP" cho WhatsApp, "INSTAGRAM_DIRECT" cho Instagram
+                       Direct. Để trống nếu đích chuyển đổi vẫn là Website.
     targeting: dict theo cấu trúc Targeting của Facebook, ví dụ:
         {
           "geo_locations": {"countries": ["VN"]},
@@ -62,5 +64,7 @@ def create_adset(
         params[AdSet.Field.bid_amount] = bid_amount
     if promoted_object:
         params[AdSet.Field.promoted_object] = promoted_object
+    if destination_type:
+        params[AdSet.Field.destination_type] = destination_type
 
     return account.create_ad_set(params=params)
