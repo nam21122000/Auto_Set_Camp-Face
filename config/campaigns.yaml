@@ -18,7 +18,7 @@ campaigns:
             countries: ["VN"]
           age_min: 27
           age_max: 55
-          genders: ["female"] 
+          genders: [2] 
           publisher_platforms: ["facebook", "messenger"]    # Chỉ chạy trên Facebook + Messenger
           device_platforms: ["mobile"]                      # Chỉ nhắm thiết bị di động 
           wifi_only: false                                  # KHÔNG giới hạn chỉ khi có Wi-Fi
