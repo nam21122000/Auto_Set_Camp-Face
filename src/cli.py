@@ -106,6 +106,10 @@ def run(config_path: str, dry_run: bool = False) -> None:
 
     for camp_cfg in config.get("campaigns", []):
         print(f"\n=== Campaign: {camp_cfg['name']} ===")
+        # Có dùng CBO ("Ngân sách chiến dịch") hay không, quyết định bid_strategy
+        # phải khai báo ở cấp Campaign hay cấp AdSet (xem docstring create_adset).
+        uses_cbo = camp_cfg.get("daily_budget") is not None
+
         if dry_run:
             campaign_id = "<sẽ-tạo>"
         else:
@@ -120,6 +124,9 @@ def run(config_path: str, dry_run: bool = False) -> None:
                 # CBO; nếu không, để ngân sách trong từng adset như bình thường.
                 daily_budget=camp_cfg.get("daily_budget"),
                 buying_type=camp_cfg.get("buying_type", "AUCTION"),
+                # Với CBO, bid_strategy/bid_amount phải khai báo ở Campaign
+                bid_strategy=camp_cfg.get("bid_strategy") if uses_cbo else None,
+                bid_amount=camp_cfg.get("bid_amount") if uses_cbo else None,
             )
             campaign_id = campaign["id"]
             print(f"  -> Campaign ID: {campaign_id}")
@@ -143,10 +150,14 @@ def run(config_path: str, dry_run: bool = False) -> None:
                     status=adset_cfg.get("status", "PAUSED"),
                     start_time=adset_cfg.get("start_time"),
                     end_time=adset_cfg.get("end_time"),
-                    bid_strategy=adset_cfg.get(
-                        "bid_strategy", "LOWEST_COST_WITHOUT_CAP"
+                    # Nếu campaign dùng CBO, bid_strategy PHẢI để None ở AdSet
+                    # (đã khai báo ở Campaign phía trên) - xem docstring create_adset.
+                    bid_strategy=(
+                        None
+                        if uses_cbo
+                        else adset_cfg.get("bid_strategy", "LOWEST_COST_WITHOUT_CAP")
                     ),
-                    bid_amount=adset_cfg.get("bid_amount"),
+                    bid_amount=None if uses_cbo else adset_cfg.get("bid_amount"),
                     # Chỉ dùng promoted_object khi tự khai báo rõ trong config
                     # (VD chạy chiến dịch Lượt thích Trang, hoặc đích đến
                     # Messenger) - KHÔNG tự suy ra, vì dễ khiến Facebook hiểu
