@@ -1,6 +1,7 @@
 campaigns:
   - name: "Adela Shop-Adela Shop-MDU6507-Nam-26_8-VIDEO-AI"
     objective: "OUTCOME_ENGAGEMENT"      # giữ nguyên - Mục tiêu: Lượt tương tác
+    special_ad_categories: []
     daily_budget: 300000   
     status: "PAUSED"
 
