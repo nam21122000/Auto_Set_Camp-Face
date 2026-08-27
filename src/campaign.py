@@ -28,5 +28,10 @@ def create_campaign(
     }
     if daily_budget:
         params[Campaign.Field.daily_budget] = daily_budget
+        # Dùng ngân sách cấp Campaign (CBO) -> cho phép chia sẻ ngân sách giữa các AdSet
+        params["is_adset_budget_sharing_enabled"] = True
+    else:
+        # Ngân sách đặt ở cấp AdSet -> Facebook bắt buộc phải chỉ định rõ field này
+        params["is_adset_budget_sharing_enabled"] = False
 
     return account.create_campaign(params=params)
