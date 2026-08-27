@@ -115,6 +115,10 @@ def run(config_path: str, dry_run: bool = False) -> None:
                     ),
                     targeting=adset_cfg["targeting"],
                     status=adset_cfg.get("status", "PAUSED"),
+                    bid_strategy=adset_cfg.get(
+                        "bid_strategy", "LOWEST_COST_WITHOUT_CAP"
+                    ),
+                    bid_amount=adset_cfg.get("bid_amount"),
                 )
                 adset_id = adset["id"]
                 print(f"      -> AdSet ID: {adset_id}")
