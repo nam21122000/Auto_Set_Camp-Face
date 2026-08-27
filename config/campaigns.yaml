@@ -10,6 +10,8 @@ campaigns:
         billing_event: "IMPRESSIONS"
         optimization_goal: "CONVERSATIONS"    # <-- tối đa hóa cuộc trò truyện
         destination_type: "MESSENGER"         # <-- Vị trí chuyển đổi Đích đến của tin nhắn
+        promoted_object:                    
+          page_id: "1294066237122353"
         status: "ACTIVE"
         targeting:
           geo_locations:
