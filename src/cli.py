@@ -117,15 +117,6 @@ def run(config_path: str, dry_run: bool = False) -> None:
             if dry_run:
                 adset_id = "<sẽ-tạo>"
             else:
-                # Tự suy ra promoted_object (page_id) từ ad đầu tiên trong adset
-                # nếu config chưa khai báo riêng — cần thiết cho optimization_goal
-                # dạng POST_ENGAGEMENT/PAGE_LIKES để tránh Facebook đòi hỏi Pixel.
-                promoted_object = adset_cfg.get("promoted_object")
-                if not promoted_object:
-                    first_ad = next(iter(adset_cfg.get("ads", [])), None)
-                    if first_ad and first_ad.get("page_id"):
-                        promoted_object = {"page_id": first_ad["page_id"]}
-
                 adset = create_adset(
                     account,
                     name=adset_cfg["name"],
@@ -141,7 +132,10 @@ def run(config_path: str, dry_run: bool = False) -> None:
                         "bid_strategy", "LOWEST_COST_WITHOUT_CAP"
                     ),
                     bid_amount=adset_cfg.get("bid_amount"),
-                    promoted_object=promoted_object,
+                    # Chỉ dùng promoted_object khi tự khai báo rõ trong config
+                    # (VD chạy chiến dịch Lượt thích Trang) - KHÔNG tự suy ra,
+                    # vì dễ khiến Facebook hiểu nhầm sang loại chiến dịch khác.
+                    promoted_object=adset_cfg.get("promoted_object"),
                 )
                 adset_id = adset["id"]
                 print(f"      -> AdSet ID: {adset_id}")
