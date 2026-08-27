@@ -29,5 +29,5 @@ campaigns:
             page_id: "1294066237122353"
             existing_post_id: "122093020893469554"
             call_to_action: "MESSAGE_PAGE"     # Nút kêu gọi hành động
-            # destination: "messenger"           
+            destination: "messenger"           
             status: "ACTIVE"
