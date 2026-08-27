@@ -41,6 +41,19 @@ def _build_creative(account, ad_cfg: dict):
             name=name,
         )
 
+    if ad_cfg.get("existing_video_id"):
+        # Dùng trực tiếp 1 video/Reel đã có sẵn trên Page (không cần upload lại)
+        return create_creative_from_video(
+            account,
+            page_id=ad_cfg["page_id"],
+            message=ad_cfg.get("message", ""),
+            video_id=ad_cfg["existing_video_id"],
+            thumbnail_url=ad_cfg["thumbnail_url"],
+            name=name,
+            call_to_action_type=ad_cfg.get("call_to_action", "SHOP_NOW"),
+            link=ad_cfg.get("link", ""),
+        )
+
     if ad_cfg.get("video_path"):
         video_id = upload_video(account, ad_cfg["video_path"])
         return create_creative_from_video(
@@ -67,8 +80,8 @@ def _build_creative(account, ad_cfg: dict):
         )
 
     raise ValueError(
-        f"Ad '{ad_cfg['name']}' cần có 1 trong 3: existing_post_id / "
-        f"image_path / video_path trong file config."
+        f"Ad '{ad_cfg['name']}' cần có 1 trong 4: existing_post_id / "
+        f"existing_video_id / image_path / video_path trong file config."
     )
 
 
@@ -104,6 +117,15 @@ def run(config_path: str, dry_run: bool = False) -> None:
             if dry_run:
                 adset_id = "<sẽ-tạo>"
             else:
+                # Tự suy ra promoted_object (page_id) từ ad đầu tiên trong adset
+                # nếu config chưa khai báo riêng — cần thiết cho optimization_goal
+                # dạng POST_ENGAGEMENT/PAGE_LIKES để tránh Facebook đòi hỏi Pixel.
+                promoted_object = adset_cfg.get("promoted_object")
+                if not promoted_object:
+                    first_ad = next(iter(adset_cfg.get("ads", [])), None)
+                    if first_ad and first_ad.get("page_id"):
+                        promoted_object = {"page_id": first_ad["page_id"]}
+
                 adset = create_adset(
                     account,
                     name=adset_cfg["name"],
@@ -119,6 +141,7 @@ def run(config_path: str, dry_run: bool = False) -> None:
                         "bid_strategy", "LOWEST_COST_WITHOUT_CAP"
                     ),
                     bid_amount=adset_cfg.get("bid_amount"),
+                    promoted_object=promoted_object,
                 )
                 adset_id = adset["id"]
                 print(f"      -> AdSet ID: {adset_id}")
