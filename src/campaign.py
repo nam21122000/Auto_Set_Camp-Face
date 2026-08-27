@@ -32,11 +32,11 @@ def create_campaign(
         Campaign.Field.buying_type: buying_type,
     }
     if daily_budget:
+        # Dùng ngân sách cấp Campaign (CBO - "Ngân sách chiến dịch").
+        # KHÔNG set is_adset_budget_sharing_enabled ở đây: field này dùng cho
+        # 1 tính năng khác ("chia sẻ ngân sách linh hoạt" giữa các adset khi
+        # KHÔNG dùng CBO) và Facebook sẽ trả lỗi 400 (error_subcode 4834002)
+        # nếu vừa có daily_budget cấp campaign vừa set field này = true.
         params[Campaign.Field.daily_budget] = daily_budget
-        # Dùng ngân sách cấp Campaign (CBO) -> cho phép chia sẻ ngân sách giữa các AdSet
-        params["is_adset_budget_sharing_enabled"] = True
-    else:
-        # Ngân sách đặt ở cấp AdSet -> Facebook bắt buộc phải chỉ định rõ field này
-        params["is_adset_budget_sharing_enabled"] = False
 
     return account.create_campaign(params=params)
