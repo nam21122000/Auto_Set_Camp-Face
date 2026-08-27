@@ -29,6 +29,7 @@ campaigns:
           - name: "Ad - MDU6507"
             page_id: "1294066237122353"
             existing_post_id: "122093020893469554"   # phần số sau dấu "_" của post id
+            link: "https://www.mydu.com.vn/t134n"
             status: "PAUSED"
 
           # Cách 2: tạo creative MỚI từ video local (bỏ comment để dùng)
