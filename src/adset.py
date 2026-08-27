@@ -13,7 +13,7 @@ def create_adset(
     daily_budget: int | None = None,
     status: str = "PAUSED",
     start_time: str | None = None,
-    bid_strategy: str = "LOWEST_COST_WITHOUT_CAP",
+    bid_strategy: str | None = None,
     bid_amount: int | None = None,
     promoted_object: dict | None = None,
     destination_type: str | None = None,
@@ -30,7 +30,10 @@ def create_adset(
     billing_event: IMPRESSIONS, LINK_CLICKS, ...
     optimization_goal: POST_ENGAGEMENT, LINK_CLICKS, OFFSITE_CONVERSIONS,
                         REACH, VIDEO_VIEWS, CONVERSATIONS (khi đích là Tin nhắn), ...
-    bid_strategy: LOWEST_COST_WITHOUT_CAP (mặc định, để Facebook tự tối ưu giá),
+    bid_strategy: CHỈ truyền khi KHÔNG dùng CBO (ngân sách cấp AdSet). Nếu dùng
+                  CBO thì bid_strategy phải khai báo ở create_campaign(), để
+                  trống ở đây — nếu không sẽ bị lỗi "phải nhập giá thầu".
+                  LOWEST_COST_WITHOUT_CAP (mặc định, để Facebook tự tối ưu giá),
                   LOWEST_COST_WITH_BID_CAP (phải kèm bid_amount = giá thầu tối đa),
                   COST_CAP (phải kèm bid_amount = mức chi phí mục tiêu).
     bid_amount: chỉ cần khi bid_strategy khác LOWEST_COST_WITHOUT_CAP.
@@ -59,10 +62,11 @@ def create_adset(
         AdSet.Field.optimization_goal: optimization_goal,
         AdSet.Field.targeting: targeting,
         AdSet.Field.status: status,
-        AdSet.Field.bid_strategy: bid_strategy,
     }
     if daily_budget:
         params[AdSet.Field.daily_budget] = daily_budget
+    if bid_strategy:
+        params[AdSet.Field.bid_strategy] = bid_strategy
     if start_time:
         params[AdSet.Field.start_time] = start_time
     if bid_amount:
