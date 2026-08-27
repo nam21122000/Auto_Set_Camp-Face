@@ -27,38 +27,18 @@ def upload_video(account: AdAccount, video_path: str) -> str:
     return video.get_id()
 
 
-def _with_multi_advertiser_ads(params: dict, multi_advertiser_ads: bool) -> dict:
-    """
-    Bật/tắt "Quảng cáo đa bên" (Multi-advertiser ads) — tick "Quảng cáo của bạn
-    có thể xuất hiện cùng với những quảng cáo khác trong cùng 1 đơn vị quảng
-    cáo để thu hút mọi người khám phá". Mặc định BẬT (giống hành vi mặc định
-    trên giao diện Ads Manager).
-    """
-    params["contextual_multi_ads"] = {
-        "enroll_status": "OPT_IN" if multi_advertiser_ads else "OPT_OUT"
-    }
-    return params
-
-
 def create_creative_from_existing_post(
-    account: AdAccount,
-    page_id: str,
-    post_id: str,
-    name: str,
-    multi_advertiser_ads: bool = True,
+    account: AdAccount, page_id: str, post_id: str, name: str
 ) -> AdCreative:
     """
     Tạo creative từ 1 bài post đã đăng sẵn trên Fanpage.
     post_id: chỉ phần số sau dấu "_" trong ID bài viết (không kèm page_id).
-    multi_advertiser_ads: tick "Quảng cáo đa bên" như ảnh chụp cấu hình mẫu
-                           (mặc định True, giống mặc định trên Ads Manager).
     """
     object_story_id = f"{page_id}_{post_id}"
     params = {
         AdCreative.Field.name: name,
         AdCreative.Field.object_story_id: object_story_id,
     }
-    params = _with_multi_advertiser_ads(params, multi_advertiser_ads)
     return account.create_ad_creative(params=params)
 
 
@@ -70,7 +50,6 @@ def create_creative_from_image(
     image_hash: str,
     name: str,
     call_to_action_type: str = "SHOP_NOW",
-    multi_advertiser_ads: bool = True,
 ) -> AdCreative:
     """Tạo creative mới (dạng link ad với 1 ảnh) thay vì dùng post có sẵn."""
     object_story_spec = {
@@ -86,7 +65,6 @@ def create_creative_from_image(
         AdCreative.Field.name: name,
         AdCreative.Field.object_story_spec: object_story_spec,
     }
-    params = _with_multi_advertiser_ads(params, multi_advertiser_ads)
     return account.create_ad_creative(params=params)
 
 
@@ -99,7 +77,6 @@ def create_creative_from_video(
     name: str,
     call_to_action_type: str = "SHOP_NOW",
     link: str = "",
-    multi_advertiser_ads: bool = True,
 ) -> AdCreative:
     """Tạo creative mới dạng video (dùng cho các mẫu '-VIDEO-AI' như trong tài khoản)."""
     video_data = {
@@ -119,5 +96,4 @@ def create_creative_from_video(
         AdCreative.Field.name: name,
         AdCreative.Field.object_story_spec: object_story_spec,
     }
-    params = _with_multi_advertiser_ads(params, multi_advertiser_ads)
     return account.create_ad_creative(params=params)
