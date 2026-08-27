@@ -121,6 +121,7 @@ def run(config_path: str, dry_run: bool = False) -> None:
                 objective=camp_cfg.get("objective", "OUTCOME_ENGAGEMENT"),
                 status=camp_cfg.get("status", "PAUSED"),
                 special_ad_categories=camp_cfg.get("special_ad_categories", []),
+                daily_budget=camp_cfg.get("daily_budget"),
             )
             campaign_id = campaign["id"]
             print(f"  -> Campaign ID: {campaign_id}")
@@ -134,7 +135,14 @@ def run(config_path: str, dry_run: bool = False) -> None:
                     account,
                     name=adset_cfg["name"],
                     campaign_id=campaign_id,
-                    daily_budget=adset_cfg["daily_budget"],
+                    # Chỉ truyền daily_budget ở đây khi KHÔNG dùng ngân sách cấp
+                    # Campaign (nếu camp_cfg đã có daily_budget thì để None,
+                    # AdSet dùng chung ngân sách campaign - CBO).
+                    daily_budget=(
+                        adset_cfg.get("daily_budget")
+                        if not camp_cfg.get("daily_budget")
+                        else None
+                    ),
                     billing_event=adset_cfg.get("billing_event", "IMPRESSIONS"),
                     optimization_goal=adset_cfg.get(
                         "optimization_goal", "POST_ENGAGEMENT"
