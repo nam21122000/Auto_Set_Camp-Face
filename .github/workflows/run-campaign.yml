@@ -1,0 +1,42 @@
+name: Tạo Campaign Facebook Ads
+
+# Chạy thủ công bằng cách bấm nút "Run workflow" trong tab Actions trên GitHub
+on:
+  workflow_dispatch:
+    inputs:
+      config_path:
+        description: "Đường dẫn tới file config YAML"
+        required: true
+        default: "config/campaigns.yaml"
+      dry_run:
+        description: "Chỉ chạy thử, không tạo thật (true/false)"
+        required: true
+        default: "true"
+
+jobs:
+  run-campaign:
+    runs-on: ubuntu-latest
+    env:
+      FB_APP_ID: ${{ secrets.FB_APP_ID }}
+      FB_APP_SECRET: ${{ secrets.FB_APP_SECRET }}
+      FB_ACCESS_TOKEN: ${{ secrets.FB_ACCESS_TOKEN }}
+      FB_AD_ACCOUNT_ID: ${{ secrets.FB_AD_ACCOUNT_ID }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cài đặt Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cài thư viện
+        run: pip install -r requirements.txt
+
+      - name: Chạy script tạo Campaign/AdSet/Ad
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            python run.py "${{ github.event.inputs.config_path }}" --dry-run
+          else
+            python run.py "${{ github.event.inputs.config_path }}"
+          fi
