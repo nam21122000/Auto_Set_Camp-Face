@@ -11,6 +11,8 @@ def create_campaign(
     special_ad_categories: list | None = None,
     daily_budget: int | None = None,
     buying_type: str = "AUCTION",
+    bid_strategy: str | None = None,
+    bid_amount: int | None = None,
 ) -> Campaign:
     """
     Tạo 1 campaign mới.
@@ -23,6 +25,12 @@ def create_campaign(
                   Nếu để ngân sách ở cấp AdSet (Ngân sách nhóm quảng cáo) thì
                   bỏ qua tham số này (để None).
     buying_type: "AUCTION" (Đấu giá, mặc định) hoặc "RESERVED".
+    bid_strategy / bid_amount: CHỈ dùng khi có daily_budget (dùng CBO) — với
+                  CBO, bid_strategy phải khai báo ở CẤP CAMPAIGN, không phải
+                  cấp AdSet, nếu không Facebook sẽ báo lỗi 400 đòi bid_amount
+                  dù đã chọn LOWEST_COST_WITHOUT_CAP (error_subcode 1815857).
+                  Nếu KHÔNG dùng CBO (đặt ngân sách ở AdSet) thì bỏ qua 2 tham
+                  số này ở đây và khai báo bid_strategy trong adset thay vào.
     """
     params = {
         Campaign.Field.name: name,
@@ -38,5 +46,9 @@ def create_campaign(
         # KHÔNG dùng CBO) và Facebook sẽ trả lỗi 400 (error_subcode 4834002)
         # nếu vừa có daily_budget cấp campaign vừa set field này = true.
         params[Campaign.Field.daily_budget] = daily_budget
+        # Với CBO, bid_strategy bắt buộc phải nằm ở params của Campaign.
+        params[Campaign.Field.bid_strategy] = bid_strategy or "LOWEST_COST_WITHOUT_CAP"
+        if bid_amount:
+            params[Campaign.Field.bid_amount] = bid_amount
 
     return account.create_campaign(params=params)
