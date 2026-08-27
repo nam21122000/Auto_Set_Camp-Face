@@ -9,7 +9,7 @@ campaigns:
       - name: "AdSet - MDU6507"
         billing_event: "IMPRESSIONS"
         optimization_goal: "CONVERSATIONS"    # <-- tối đa hóa cuộc trò truyện
-        # destination_type: "MESSENGER"         <-- Vị trí chuyển đổi Đích đến của tin nhắn
+        destination_type: "MESSENGER"         # <-- Vị trí chuyển đổi Đích đến của tin nhắn
         status: "ACTIVE"
         targeting:
           geo_locations:
