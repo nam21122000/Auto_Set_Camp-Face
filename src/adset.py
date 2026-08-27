@@ -34,7 +34,13 @@ def create_adset(
           "age_min": 18,
           "age_max": 45
         }
+        Nếu không tự khai báo "targeting_automation", mặc định sẽ TẮT
+        "Đối tượng Advantage" (advantage_audience: 0) để giữ đúng đối tượng
+        bạn nhắm tới, không để Facebook tự mở rộng.
     """
+    targeting = dict(targeting)  # tránh sửa trực tiếp dict gốc từ config
+    targeting.setdefault("targeting_automation", {"advantage_audience": 0})
+
     params = {
         AdSet.Field.name: name,
         AdSet.Field.campaign_id: campaign_id,
