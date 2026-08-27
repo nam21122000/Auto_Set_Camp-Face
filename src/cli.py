@@ -32,6 +32,9 @@ def load_config(path: str) -> dict:
 def _build_creative(account, ad_cfg: dict):
     """Chọn cách tạo creative dựa trên các field có trong config của ad."""
     name = f"Creative - {ad_cfg['name']}"
+    # Mặc định BẬT "Quảng cáo đa bên" (Multi-advertiser ads) giống mặc định
+    # trên Ads Manager; đặt multi_advertiser_ads: false trong YAML nếu muốn tắt.
+    multi_advertiser_ads = ad_cfg.get("multi_advertiser_ads", True)
 
     if ad_cfg.get("existing_post_id"):
         return create_creative_from_existing_post(
@@ -39,6 +42,7 @@ def _build_creative(account, ad_cfg: dict):
             page_id=ad_cfg["page_id"],
             post_id=ad_cfg["existing_post_id"],
             name=name,
+            multi_advertiser_ads=multi_advertiser_ads,
         )
 
     if ad_cfg.get("existing_video_id"):
@@ -52,6 +56,7 @@ def _build_creative(account, ad_cfg: dict):
             name=name,
             call_to_action_type=ad_cfg.get("call_to_action", "SHOP_NOW"),
             link=ad_cfg.get("link", ""),
+            multi_advertiser_ads=multi_advertiser_ads,
         )
 
     if ad_cfg.get("video_path"):
@@ -65,6 +70,7 @@ def _build_creative(account, ad_cfg: dict):
             name=name,
             call_to_action_type=ad_cfg.get("call_to_action", "SHOP_NOW"),
             link=ad_cfg.get("link", ""),
+            multi_advertiser_ads=multi_advertiser_ads,
         )
 
     if ad_cfg.get("image_path"):
@@ -77,6 +83,7 @@ def _build_creative(account, ad_cfg: dict):
             image_hash=image_hash,
             name=name,
             call_to_action_type=ad_cfg.get("call_to_action", "SHOP_NOW"),
+            multi_advertiser_ads=multi_advertiser_ads,
         )
 
     raise ValueError(
@@ -108,6 +115,11 @@ def run(config_path: str, dry_run: bool = False) -> None:
                 objective=camp_cfg.get("objective", "OUTCOME_ENGAGEMENT"),
                 status=camp_cfg.get("status", "PAUSED"),
                 special_ad_categories=camp_cfg.get("special_ad_categories", []),
+                # daily_budget ở đây = "Ngân sách chiến dịch" (CBO). Chỉ khai
+                # báo campaign-level "daily_budget" trong YAML nếu muốn dùng
+                # CBO; nếu không, để ngân sách trong từng adset như bình thường.
+                daily_budget=camp_cfg.get("daily_budget"),
+                buying_type=camp_cfg.get("buying_type", "AUCTION"),
             )
             campaign_id = campaign["id"]
             print(f"  -> Campaign ID: {campaign_id}")
@@ -121,21 +133,27 @@ def run(config_path: str, dry_run: bool = False) -> None:
                     account,
                     name=adset_cfg["name"],
                     campaign_id=campaign_id,
-                    daily_budget=adset_cfg["daily_budget"],
+                    # Để None nếu campaign đã dùng CBO (camp_cfg["daily_budget"])
+                    daily_budget=adset_cfg.get("daily_budget"),
                     billing_event=adset_cfg.get("billing_event", "IMPRESSIONS"),
                     optimization_goal=adset_cfg.get(
                         "optimization_goal", "POST_ENGAGEMENT"
                     ),
                     targeting=adset_cfg["targeting"],
                     status=adset_cfg.get("status", "PAUSED"),
+                    start_time=adset_cfg.get("start_time"),
+                    end_time=adset_cfg.get("end_time"),
                     bid_strategy=adset_cfg.get(
                         "bid_strategy", "LOWEST_COST_WITHOUT_CAP"
                     ),
                     bid_amount=adset_cfg.get("bid_amount"),
                     # Chỉ dùng promoted_object khi tự khai báo rõ trong config
-                    # (VD chạy chiến dịch Lượt thích Trang) - KHÔNG tự suy ra,
-                    # vì dễ khiến Facebook hiểu nhầm sang loại chiến dịch khác.
+                    # (VD chạy chiến dịch Lượt thích Trang, hoặc đích đến
+                    # Messenger) - KHÔNG tự suy ra, vì dễ khiến Facebook hiểu
+                    # nhầm sang loại chiến dịch khác.
                     promoted_object=adset_cfg.get("promoted_object"),
+                    # "MESSENGER" khi muốn "Đích đến của tin nhắn" = Messenger
+                    destination_type=adset_cfg.get("destination_type"),
                 )
                 adset_id = adset["id"]
                 print(f"      -> AdSet ID: {adset_id}")
