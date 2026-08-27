@@ -15,6 +15,7 @@ def create_adset(
     start_time: str | None = None,
     bid_strategy: str = "LOWEST_COST_WITHOUT_CAP",
     bid_amount: int | None = None,
+    promoted_object: dict | None = None,
 ) -> AdSet:
     """
     Tạo 1 ad set mới trong campaign đã cho.
@@ -28,6 +29,10 @@ def create_adset(
                   LOWEST_COST_WITH_BID_CAP (phải kèm bid_amount = giá thầu tối đa),
                   COST_CAP (phải kèm bid_amount = mức chi phí mục tiêu).
     bid_amount: chỉ cần khi bid_strategy khác LOWEST_COST_WITHOUT_CAP.
+    promoted_object: bắt buộc với optimization_goal = POST_ENGAGEMENT/PAGE_LIKES,
+                      ví dụ {"page_id": "1294066237122353"} — cho Facebook biết
+                      đối tượng "chuyển đổi" chính là tương tác trên Page đó,
+                      tránh bị đòi hỏi phải gắn Pixel.
     targeting: dict theo cấu trúc Targeting của Facebook, ví dụ:
         {
           "geo_locations": {"countries": ["VN"]},
@@ -55,5 +60,7 @@ def create_adset(
         params[AdSet.Field.start_time] = start_time
     if bid_amount:
         params[AdSet.Field.bid_amount] = bid_amount
+    if promoted_object:
+        params[AdSet.Field.promoted_object] = promoted_object
 
     return account.create_ad_set(params=params)
