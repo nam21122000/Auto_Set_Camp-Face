@@ -9,7 +9,7 @@ campaigns:
         billing_event: "IMPRESSIONS"
         optimization_goal: "CONVERSATIONS"    # <-- đổi từ POST_ENGAGEMENT
         destination_type: "MESSENGER"         # <-- thêm dòng này (đích: Tin nhắn)
-        status: "PAUSED"
+        status: "ACTIVE"
         targeting:
           geo_locations:
             countries: ["VN"]
@@ -20,8 +20,6 @@ campaigns:
           - name: "Ad - MDU6507"
             page_id: "1294066237122353"
             existing_video_id: "27946023661755962"
-            thumbnail_url: "..."
-            message: "..."
             call_to_action: "MESSAGE_PAGE"    # <-- đổi từ SHOP_NOW
             destination: "messenger"           # <-- thêm dòng này (không cần link web nữa)
-            status: "PAUSED"
+            status: "ACTIVE"
