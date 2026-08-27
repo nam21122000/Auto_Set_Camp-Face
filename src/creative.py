@@ -28,17 +28,29 @@ def upload_video(account: AdAccount, video_path: str) -> str:
 
 
 def create_creative_from_existing_post(
-    account: AdAccount, page_id: str, post_id: str, name: str
+    account: AdAccount,
+    page_id: str,
+    post_id: str,
+    name: str,
+    call_to_action_type: str | None = None,
 ) -> AdCreative:
     """
     Tạo creative từ 1 bài post đã đăng sẵn trên Fanpage.
     post_id: chỉ phần số sau dấu "_" trong ID bài viết (không kèm page_id).
+    call_to_action_type: gắn thêm 1 nút CTA lên bài viết khi chạy quảng cáo
+                          (bài gốc không bị thay đổi). VD "MESSAGE_PAGE" để
+                          thêm nút "Gửi tin nhắn" khi đích chuyển đổi là
+                          Messenger. Để trống nếu muốn giữ nguyên bài viết,
+                          không thêm nút CTA nào.
     """
     object_story_id = f"{page_id}_{post_id}"
     params = {
         AdCreative.Field.name: name,
         AdCreative.Field.object_story_id: object_story_id,
     }
+    if call_to_action_type:
+        params[AdCreative.Field.call_to_action_type] = call_to_action_type
+
     return account.create_ad_creative(params=params)
 
 
