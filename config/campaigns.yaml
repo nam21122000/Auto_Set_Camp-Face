@@ -1,52 +1,27 @@
-# =============================================================================
-# FILE CẤU HÌNH MẪU - sao chép file này thành campaigns.yaml rồi chỉnh sửa
-# =============================================================================
-# Có thể khai báo nhiều campaign trong 1 lần chạy, mỗi campaign nhiều adset,
-# mỗi adset nhiều ad. Đặt tên theo đúng mẫu tài khoản đang dùng, ví dụ:
-#   Adela Shop-Adela Shop-MDU6507-Nam-26_8-VIDEO-AI
-
 campaigns:
   - name: "Adela Shop-Adela Shop-MDU6507-Nam-26_8-VIDEO-AI"
-    objective: "OUTCOME_ENGAGEMENT"   # xem README mục "Objective hợp lệ"
-    status: "PAUSED"                 # luôn để PAUSED khi mới tạo, tự bật tay sau khi kiểm tra
-    special_ad_categories: []        # ví dụ ["HOUSING"] nếu quảng cáo BĐS/tuyển dụng/tín dụng
+    objective: "OUTCOME_ENGAGEMENT"      # giữ nguyên - Mục tiêu: Lượt tương tác
+    status: "PAUSED"
 
     adsets:
       - name: "AdSet - MDU6507"
-        daily_budget: 100000          # 100.000 VNĐ/ngày (VND không có phần thập phân)
+        daily_budget: 100000
         billing_event: "IMPRESSIONS"
-        optimization_goal: "POST_ENGAGEMENT"
+        optimization_goal: "CONVERSATIONS"    # <-- đổi từ POST_ENGAGEMENT
+        destination_type: "MESSENGER"         # <-- thêm dòng này (đích: Tin nhắn)
         status: "PAUSED"
         targeting:
           geo_locations:
             countries: ["VN"]
           age_min: 18
           age_max: 45
-          genders: []                 # để trống = cả 2 giới tính
 
         ads:
-          # Cách 1: dùng lại bài viết CÓ SẴN trên Fanpage (giống ảnh chụp gốc)
           - name: "Ad - MDU6507"
             page_id: "1294066237122353"
-            existing_post_id: "122093020893469554"   # phần số sau dấu "_" của post id
-            link: "https://www.mydu.com.vn/t134n"
+            existing_video_id: "27946023661755962"
+            thumbnail_url: "..."
+            message: "..."
+            call_to_action: "MESSAGE_PAGE"    # <-- đổi từ SHOP_NOW
+            destination: "messenger"           # <-- thêm dòng này (không cần link web nữa)
             status: "PAUSED"
-
-          # Cách 2: tạo creative MỚI từ video local (bỏ comment để dùng)
-          # - name: "Ad - MDU6507 - video moi"
-          #   page_id: "PAGE_ID_CUA_BAN"
-          #   video_path: "assets/mdu6507.mp4"
-          #   thumbnail_url: "https://link-anh-thumbnail-cua-ban.jpg"
-          #   message: "Nội dung quảng cáo..."
-          #   link: "https://adela-shop.com"
-          #   call_to_action: "SHOP_NOW"
-          #   status: "PAUSED"
-
-          # Cách 3: tạo creative MỚI từ ảnh local (bỏ comment để dùng)
-          # - name: "Ad - MDU6507 - anh moi"
-          #   page_id: "PAGE_ID_CUA_BAN"
-          #   image_path: "assets/mdu6507.jpg"
-          #   message: "Nội dung quảng cáo..."
-          #   link: "https://adela-shop.com"
-          #   call_to_action: "SHOP_NOW"
-          #   status: "PAUSED"
