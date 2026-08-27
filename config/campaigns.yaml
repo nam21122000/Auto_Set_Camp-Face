@@ -13,8 +13,8 @@ campaigns:
         targeting:
           geo_locations:
             countries: ["VN"]
-          age_min: 18
-          age_max: 45
+          age_min: 27
+          age_max: 55
 
         ads:
           - name: "Ad - MDU6507"
