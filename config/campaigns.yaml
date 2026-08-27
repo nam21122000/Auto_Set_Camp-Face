@@ -1,52 +1,90 @@
 # =============================================================================
-# FILE CẤU HÌNH MẪU - sao chép file này thành campaigns.yaml rồi chỉnh sửa
+# FILE CẤU HÌNH - chỉnh sửa theo dữ liệu thật rồi chạy: python run.py config/campaigns.yaml
 # =============================================================================
-# Có thể khai báo nhiều campaign trong 1 lần chạy, mỗi campaign nhiều adset,
-# mỗi adset nhiều ad. Đặt tên theo đúng mẫu tài khoản đang dùng, ví dụ:
-#   Adela Shop-Adela Shop-MDU6507-Nam-26_8-VIDEO-AI
+# Mẫu dưới đây tái hiện đúng luồng tạo chiến dịch trên giao diện Ads Manager:
+#   Chiến dịch "Lượt tương tác" (Engagement) dùng Ngân sách chiến dịch (CBO)
+#   -> Nhóm quảng cáo có Đích đến của tin nhắn = Messenger, tối ưu lượt mua
+#      qua tin nhắn -> Quảng cáo dùng bài viết có sẵn + Quảng cáo đa bên.
 
 campaigns:
-  - name: "Adela Shop-Adela Shop-MDU6507-Nam-26_8-VIDEO-AI"
-    objective: "OUTCOME_ENGAGEMENT"   # xem README mục "Objective hợp lệ"
-    status: "PAUSED"                 # luôn để PAUSED khi mới tạo, tự bật tay sau khi kiểm tra
-    special_ad_categories: []        # ví dụ ["HOUSING"] nếu quảng cáo BĐS/tuyển dụng/tín dụng
+  - name: "Chiến dịch Lượt tương tác mới"
+    objective: "OUTCOME_ENGAGEMENT"      # = "Lượt tương tác" trên giao diện
+    status: "PAUSED"                     # luôn để PAUSED khi mới tạo, tự bật tay sau khi kiểm tra
+    special_ad_categories: []            # ví dụ ["HOUSING"] nếu quảng cáo BĐS/tuyển dụng/tín dụng
+    buying_type: "AUCTION"               # "Đấu giá"
+
+    # "Ngân sách chiến dịch" (CBO) - đặt ở ĐÂY thay vì trong từng adset.
+    # Nếu muốn dùng "Ngân sách nhóm quảng cáo" thay thế, XÓA dòng dưới và
+    # khai báo "daily_budget" bên trong từng adset ở dưới thay vào đó.
+    daily_budget: 300000                 # 300.000 VNĐ/ngày (VND không có phần thập phân)
 
     adsets:
-      - name: "AdSet - MDU6507"
-        daily_budget: 100000          # 100.000 VNĐ/ngày (VND không có phần thập phân)
+      - name: "Nhóm quảng cáo Lượt tương tác mới"
         billing_event: "IMPRESSIONS"
-        optimization_goal: "POST_ENGAGEMENT"
+
+        # "CONVERSATIONS" = tối ưu số cuộc trò chuyện/tin nhắn, dùng khi
+        # destination_type = MESSENGER. Đây là mục tiêu hiệu quả tương ứng
+        # gần nhất với "Tối đa hóa số lượt mua qua tin nhắn" trên giao diện;
+        # để tối ưu ĐÚNG theo giá trị đơn hàng qua tin nhắn (purchase value),
+        # tài khoản cần được Meta cấp quyền "Tối ưu chuyển đổi qua tin nhắn"
+        # (Click-to-Message purchase optimization) - kiểm tra trong Ads Manager
+        # xem lựa chọn "Tối đa hóa số lượt mua qua tin nhắn" có hiện ra không.
+        optimization_goal: "CONVERSATIONS"
         status: "PAUSED"
+
+        # "Đích đến của tin nhắn" = Messenger (giống ảnh cấu hình mẫu)
+        destination_type: "MESSENGER"
+        promoted_object:
+          page_id: "1294066237122353"    # Page dùng làm điểm đến tin nhắn (MDU Shop)
+
+        # Lịch chạy: có ngày giờ bắt đầu, KHÔNG đặt ngày kết thúc
+        start_time: "2026-08-28T14:40:00+0700"
+        # end_time: "2026-09-27T14:40:00+0700"   # bỏ comment nếu muốn đặt ngày kết thúc
+
+        bid_strategy: "LOWEST_COST_WITHOUT_CAP"
+
         targeting:
           geo_locations:
             countries: ["VN"]
-          age_min: 18
-          age_max: 45
-          genders: []                 # để trống = cả 2 giới tính
+          age_min: 27
+          age_max: 55
+          genders: []                    # để trống = cả 2 giới tính
+
+          # Chỉ chạy trên Facebook + Messenger (tắt Instagram/Audience
+          # Network/Threads/WhatsApp - giống ảnh chụp "Nền tảng")
+          publisher_platforms: ["facebook", "messenger"]
+          # Để trống facebook_positions/messenger_positions = để Facebook tự
+          # chọn vị trí tối ưu trong 2 nền tảng trên (Advantage+ placements),
+          # giống trạng thái mặc định trong ảnh chụp "Kiểm soát vị trí quảng cáo"
+
+          # Chỉ nhắm thiết bị di động (giống ảnh "Thiết bị và hệ điều hành")
+          device_platforms: ["mobile"]
+          wifi_only: false               # KHÔNG giới hạn chỉ khi có Wi-Fi
 
         ads:
-          # Cách 1: dùng lại bài viết CÓ SẴN trên Fanpage (giống ảnh chụp gốc)
-          - name: "Ad - MDU6507"
+          # Dùng lại bài viết CÓ SẴN trên Fanpage + bật "Quảng cáo đa bên"
+          - name: "Ad - Lượt tương tác mới"
             page_id: "1294066237122353"
             existing_post_id: "122093020893469554"   # phần số sau dấu "_" của post id
-            link: "https://www.mydu.com.vn/t134n"
+            multi_advertiser_ads: true    # tick "Quảng cáo đa bên" (mặc định true)
             status: "PAUSED"
 
-          # Cách 2: tạo creative MỚI từ video local (bỏ comment để dùng)
-          # - name: "Ad - MDU6507 - video moi"
+          # Cách khác: tạo creative MỚI từ video local (bỏ comment để dùng)
+          # - name: "Ad - video moi"
           #   page_id: "PAGE_ID_CUA_BAN"
-          #   video_path: "assets/mdu6507.mp4"
+          #   video_path: "assets/video.mp4"
           #   thumbnail_url: "https://link-anh-thumbnail-cua-ban.jpg"
           #   message: "Nội dung quảng cáo..."
-          #   link: "https://adela-shop.com"
           #   call_to_action: "SHOP_NOW"
+          #   multi_advertiser_ads: true
           #   status: "PAUSED"
 
-          # Cách 3: tạo creative MỚI từ ảnh local (bỏ comment để dùng)
-          # - name: "Ad - MDU6507 - anh moi"
+          # Cách khác: tạo creative MỚI từ ảnh local (bỏ comment để dùng)
+          # - name: "Ad - anh moi"
           #   page_id: "PAGE_ID_CUA_BAN"
-          #   image_path: "assets/mdu6507.jpg"
+          #   image_path: "assets/anh.jpg"
           #   message: "Nội dung quảng cáo..."
           #   link: "https://adela-shop.com"
           #   call_to_action: "SHOP_NOW"
+          #   multi_advertiser_ads: true
           #   status: "PAUSED"
