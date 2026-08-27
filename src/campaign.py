@@ -25,13 +25,11 @@ def create_campaign(
         Campaign.Field.objective: objective,
         Campaign.Field.status: status,
         Campaign.Field.special_ad_categories: special_ad_categories or [],
+        # Đây là tính năng "chia sẻ ngân sách linh hoạt giữa AdSet" (khác CBO),
+        # xung đột với việc đặt ngân sách cố định ở cấp Campaign -> luôn để False.
+        "is_adset_budget_sharing_enabled": False,
     }
     if daily_budget:
         params[Campaign.Field.daily_budget] = daily_budget
-        # Dùng ngân sách cấp Campaign (CBO) -> cho phép chia sẻ ngân sách giữa các AdSet
-        params["is_adset_budget_sharing_enabled"] = True
-    else:
-        # Ngân sách đặt ở cấp AdSet -> Facebook bắt buộc phải chỉ định rõ field này
-        params["is_adset_budget_sharing_enabled"] = False
 
     return account.create_campaign(params=params)
