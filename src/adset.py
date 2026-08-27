@@ -14,7 +14,7 @@ def create_adset(
     status: str = "PAUSED",
     start_time: str | None = None,
     end_time: str | None = None,
-    bid_strategy: str = "LOWEST_COST_WITHOUT_CAP",
+    bid_strategy: str | None = "LOWEST_COST_WITHOUT_CAP",
     bid_amount: int | None = None,
     promoted_object: dict | None = None,
     destination_type: str | None = None,
@@ -41,6 +41,12 @@ def create_adset(
     bid_strategy: LOWEST_COST_WITHOUT_CAP (mặc định, để Facebook tự tối ưu giá),
                   LOWEST_COST_WITH_BID_CAP (phải kèm bid_amount = giá thầu tối đa),
                   COST_CAP (phải kèm bid_amount = mức chi phí mục tiêu).
+                  QUAN TRỌNG: nếu campaign đang dùng CBO ("Ngân sách chiến
+                  dịch" — daily_budget khai báo ở cấp campaign), phải truyền
+                  bid_strategy=None ở đây (không đặt ở AdSet), vì với CBO
+                  Facebook bắt buộc bid_strategy phải nằm ở params của
+                  Campaign, đặt trùng ở cả AdSet sẽ gây lỗi 400 đòi bid_amount
+                  dù đã chọn LOWEST_COST_WITHOUT_CAP (error_subcode 1815857).
     bid_amount: chỉ cần khi bid_strategy khác LOWEST_COST_WITHOUT_CAP.
     promoted_object: bắt buộc với optimization_goal = POST_ENGAGEMENT/PAGE_LIKES/
                       CONVERSATIONS, ví dụ {"page_id": "1294066237122353"} — cho
@@ -74,8 +80,10 @@ def create_adset(
         AdSet.Field.optimization_goal: optimization_goal,
         AdSet.Field.targeting: targeting,
         AdSet.Field.status: status,
-        AdSet.Field.bid_strategy: bid_strategy,
     }
+    if bid_strategy:
+        # Chỉ set khi KHÔNG dùng CBO ở campaign (xem lưu ý ở docstring)
+        params[AdSet.Field.bid_strategy] = bid_strategy
     if daily_budget:
         # Chỉ set nếu ngân sách nằm ở cấp AdSet (không dùng CBO ở campaign)
         params[AdSet.Field.daily_budget] = daily_budget
