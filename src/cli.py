@@ -29,6 +29,17 @@ def load_config(path: str) -> dict:
         return yaml.safe_load(f)
 
 
+def _build_cta_value(ad_cfg: dict) -> dict | None:
+    """
+    Nếu ad khai báo destination: "messenger" trong config, trả về cta_value
+    trỏ nút CTA đến Messenger thay vì link web. Ngược lại trả None (dùng
+    hành vi mặc định là {"link": link}).
+    """
+    if ad_cfg.get("destination") == "messenger":
+        return {"app_destination": "MESSENGER"}
+    return None
+
+
 def _build_creative(account, ad_cfg: dict):
     """Chọn cách tạo creative dựa trên các field có trong config của ad."""
     name = f"Creative - {ad_cfg['name']}"
@@ -52,6 +63,7 @@ def _build_creative(account, ad_cfg: dict):
             name=name,
             call_to_action_type=ad_cfg.get("call_to_action", "SHOP_NOW"),
             link=ad_cfg.get("link", ""),
+            cta_value=_build_cta_value(ad_cfg),
         )
 
     if ad_cfg.get("video_path"):
@@ -65,6 +77,7 @@ def _build_creative(account, ad_cfg: dict):
             name=name,
             call_to_action_type=ad_cfg.get("call_to_action", "SHOP_NOW"),
             link=ad_cfg.get("link", ""),
+            cta_value=_build_cta_value(ad_cfg),
         )
 
     if ad_cfg.get("image_path"):
@@ -136,6 +149,7 @@ def run(config_path: str, dry_run: bool = False) -> None:
                     # (VD chạy chiến dịch Lượt thích Trang) - KHÔNG tự suy ra,
                     # vì dễ khiến Facebook hiểu nhầm sang loại chiến dịch khác.
                     promoted_object=adset_cfg.get("promoted_object"),
+                    destination_type=adset_cfg.get("destination_type"),
                 )
                 adset_id = adset["id"]
                 print(f"      -> AdSet ID: {adset_id}")
