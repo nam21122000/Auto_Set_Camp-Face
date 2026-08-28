@@ -82,9 +82,6 @@ python -m venv venv
 source venv/bin/activate        # Windows: venv\Scripts\activate
 
 pip install -r requirements.txt
-
-cp .env.example .env
-# Mở file .env, điền 4 giá trị đã lấy ở Mục 2
 ```
 
 ---
@@ -141,7 +138,6 @@ khi đã ưng ý.
 fb-ads-automation/
 ├── README.md
 ├── requirements.txt
-├── .env.example          # copy thành .env và điền token thật (không commit .env)
 ├── run.py                # điểm chạy chính
 ├── config/
 │   └── campaigns.example.yaml
@@ -181,7 +177,6 @@ git push -u origin main
 
 ## 9. Lưu ý quan trọng
 
-- **Không commit file `.env`** — chứa access token, lộ ra ai cũng chiếm được quyền
   quản lý tài khoản quảng cáo của bạn (`.gitignore` đã chặn sẵn).
 - Rate limit: Marketing API giới hạn số request/giờ theo tier của app — nếu tạo
   số lượng lớn campaign cùng lúc, nên thêm độ trễ (`time.sleep`) giữa các lần gọi.
