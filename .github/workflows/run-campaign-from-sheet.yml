@@ -6,8 +6,8 @@ on:
     inputs:
       dry_run:
         description: "Chỉ chạy thử, không tạo thật (true/false)"
-        required: false
-        default: "false"
+        required: true
+        default: "true"
 
 jobs:
   run-campaign-from-sheet:
@@ -18,8 +18,9 @@ jobs:
       FB_ACCESS_TOKEN: ${{ secrets.FB_ACCESS_TOKEN }}
       GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
       GOOGLE_SHEET_TAB: ${{ secrets.GOOGLE_SHEET_TAB }}
-      # File JSON key được ghi ra ở bước "Tạo file Service Account JSON" bên dưới
-      GOOGLE_SERVICE_ACCOUNT_FILE: service-account.json
+      # Nội dung JSON key được đọc thẳng từ secret, KHÔNG ghi ra file trung gian
+      # (tránh lỗi hỏng định dạng JSON khi ghi qua shell)
+      GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -32,9 +33,6 @@ jobs:
       - name: Cài thư viện
         run: pip install -r requirements.txt
 
-      - name: Tạo file Service Account JSON từ secret
-        run: echo '${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}' > service-account.json
-
       - name: Chạy script tạo Campaign/AdSet/Ad từ Google Sheet
         run: |
           if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
@@ -42,7 +40,3 @@ jobs:
           else
             python run.py --from-sheet
           fi
-
-      - name: Xoá file Service Account JSON (dọn dẹp, không để lại trên runner)
-        if: always()
-        run: rm -f service-account.json
