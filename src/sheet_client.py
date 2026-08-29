@@ -45,10 +45,10 @@ class SheetRow:
 
 
 def _get_client() -> gspread.Client:
-    key_path = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE")
+    key_path = os.getenv("GOOGLE_CREDENTIALS")
     if not key_path:
         raise EnvironmentError(
-            "Thiếu GOOGLE_SERVICE_ACCOUNT_FILE trong .env (đường dẫn tới file "
+            "Thiếu GOOGLE_CREDENTIALS trong .env (đường dẫn tới file "
             "JSON key của Service Account). Xem README phần 'Kết nối Google Sheet'."
         )
     if not os.path.exists(key_path):
