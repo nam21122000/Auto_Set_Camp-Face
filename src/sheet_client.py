@@ -12,16 +12,24 @@ qua shell.
 
 Cấu trúc cột đang dùng trong sheet (xem README phần Google Sheet):
     A = ID tài khoản (Ad Account ID)
-    B = ID PAGE
-    H = Tên Campaign
-    I = Ngân sách chiến dịch (VNĐ/ngày, có thể ghi dạng "3.000.000 đ")
-    O = ID POST (bài viết có sẵn trên Page dùng làm creative)
-    P = Kết quả (script tự ghi "Thành công - ..." hoặc "Lỗi: ...")
+    C = ID PAGE
+    E = Mã (dùng để đặt tên AdSet/Ad, VD "MDU3984" -> "AdSet - MDU3984")
+    H = Ngày bắt đầu chạy (VD "30/8", không cần ghi năm - tự lấy năm hiện tại,
+        nếu ngày/tháng đã qua trong năm nay thì tự hiểu là năm sau)
+    I = Giờ bắt đầu chạy (VD "00:00")
+    K = Tên Campaign
+    L = Ngân sách chiến dịch (VNĐ/ngày, có thể ghi dạng "3.000.000 đ")
+    Q = ID POST (bài viết có sẵn trên Page dùng làm creative)
+    R = Kết quả (script tự ghi "Thành công - ..." hoặc "Lỗi: ...")
+
+Ngày/Giờ (H, I) là TUỲ CHỌN: để trống cả 2 thì AdSet/Ad chạy ngay khi được bật
+(không đặt lịch); nếu điền thì phải điền ĐỦ CẢ 2 cột.
 """
 import json
 import os
 import re
 from dataclasses import dataclass
+from datetime import date, datetime, timedelta, timezone
 
 import gspread
 from google.oauth2.service_account import Credentials
@@ -31,13 +39,19 @@ SCOPES = [
     "https://www.googleapis.com/auth/drive",
 ]
 
+# Việt Nam không có giờ mùa hè -> lệch cố định UTC+7
+VN_TZ = timezone(timedelta(hours=7))
+
 # Cột trong sheet - sửa ở đây nếu sau này bạn đổi vị trí cột trong Google Sheet
 COL_AD_ACCOUNT_ID = "A"
-COL_PAGE_ID = "B"
-COL_CAMPAIGN_NAME = "H"
-COL_DAILY_BUDGET = "I"
-COL_POST_ID = "O"
-COL_RESULT = "P"
+COL_PAGE_ID = "C"
+COL_CODE = "E"
+COL_DATE = "H"
+COL_TIME = "I"
+COL_CAMPAIGN_NAME = "K"
+COL_DAILY_BUDGET = "L"
+COL_POST_ID = "Q"
+COL_RESULT = "R"
 
 HEADER_ROW = 1
 FIRST_DATA_ROW = 2
@@ -48,9 +62,11 @@ class SheetRow:
     row_number: int
     ad_account_id: str
     page_id: str
+    code: str
     campaign_name: str
     daily_budget: int
     post_id: str
+    start_time: str | None = None  # ISO 8601, VD "2026-08-30T00:00:00+07:00"
 
 
 def _get_client() -> gspread.Client:
@@ -106,6 +122,39 @@ def _parse_budget(raw: str) -> int:
     return int(digits)
 
 
+def _parse_start_time(date_raw: str, time_raw: str) -> str:
+    """
+    'Ngày' dạng "30/8" (không có năm) + 'giờ' dạng "00:00" -> ISO 8601 có múi
+    giờ VN, VD "2026-08-30T00:00:00+07:00".
+
+    Tự suy ra năm: dùng năm hiện tại; nếu ngày đó đã qua hơn 1 ngày so với hôm
+    nay thì hiểu là năm sau (VD chạy vào tháng 12 mà ghi ngày "5/1" -> hiểu là
+    ngày 5/1 năm sau, không phải đã qua).
+    """
+    date_match = re.match(r"^\s*(\d{1,2})\s*/\s*(\d{1,2})\s*$", date_raw or "")
+    if not date_match:
+        raise ValueError(f"cột Ngày sai định dạng '{date_raw}', cần dạng VD '30/8'")
+    time_match = re.match(r"^\s*(\d{1,2})\s*:\s*(\d{2})\s*$", time_raw or "")
+    if not time_match:
+        raise ValueError(f"cột giờ sai định dạng '{time_raw}', cần dạng VD '00:00'")
+
+    day, month = int(date_match.group(1)), int(date_match.group(2))
+    hour, minute = int(time_match.group(1)), int(time_match.group(2))
+
+    today = datetime.now(VN_TZ).date()
+    year = today.year
+    try:
+        candidate = date(year, month, day)
+    except ValueError as e:
+        raise ValueError(f"ngày/tháng không hợp lệ '{date_raw}': {e}") from e
+
+    if candidate < today - timedelta(days=1):
+        candidate = date(year + 1, month, day)
+
+    dt = datetime(candidate.year, candidate.month, candidate.day, hour, minute, tzinfo=VN_TZ)
+    return dt.isoformat()
+
+
 def _col_to_index(col_letter: str) -> int:
     return gspread.utils.a1_to_rowcol(f"{col_letter}1")[1] - 1
 
@@ -115,15 +164,19 @@ def read_rows(worksheet: gspread.Worksheet) -> list[SheetRow]:
     Đọc toàn bộ dòng có dữ liệu trong sheet.
 
     - Bỏ qua dòng trống hoàn toàn.
-    - Bỏ qua dòng đã có giá trị ở cột Kết quả (P) - coi như đã chạy trước đó,
+    - Bỏ qua dòng đã có giá trị ở cột Kết quả (R) - coi như đã chạy trước đó,
       tránh tạo trùng campaign khi chạy lại script nhiều lần.
-    - Dòng thiếu dữ liệu bắt buộc hoặc sai định dạng ngân sách sẽ được ghi thẳng
-      "Lỗi: ..." vào cột Kết quả và bị bỏ qua, không đưa vào danh sách trả về.
+    - Dòng thiếu dữ liệu bắt buộc hoặc sai định dạng ngân sách/ngày giờ sẽ được
+      ghi thẳng "Lỗi: ..." vào cột Kết quả và bị bỏ qua, không đưa vào danh sách
+      trả về.
     """
     values = worksheet.get_all_values()
 
     idx_account = _col_to_index(COL_AD_ACCOUNT_ID)
     idx_page = _col_to_index(COL_PAGE_ID)
+    idx_code = _col_to_index(COL_CODE)
+    idx_date = _col_to_index(COL_DATE)
+    idx_time = _col_to_index(COL_TIME)
     idx_name = _col_to_index(COL_CAMPAIGN_NAME)
     idx_budget = _col_to_index(COL_DAILY_BUDGET)
     idx_post = _col_to_index(COL_POST_ID)
@@ -136,12 +189,15 @@ def read_rows(worksheet: gspread.Worksheet) -> list[SheetRow]:
     for row_number, row in enumerate(values[HEADER_ROW:], start=FIRST_DATA_ROW):
         ad_account_id = cell(row, idx_account)
         page_id = cell(row, idx_page)
+        code = cell(row, idx_code)
+        date_raw = cell(row, idx_date)
+        time_raw = cell(row, idx_time)
         campaign_name = cell(row, idx_name)
         budget_raw = cell(row, idx_budget)
         post_id = cell(row, idx_post)
         result = cell(row, idx_result)
 
-        if not any([ad_account_id, page_id, campaign_name, budget_raw, post_id]):
+        if not any([ad_account_id, page_id, code, campaign_name, budget_raw, post_id]):
             continue  # dòng trống
 
         if result:
@@ -152,6 +208,7 @@ def read_rows(worksheet: gspread.Worksheet) -> list[SheetRow]:
             for label, val in [
                 ("ID tài khoản", ad_account_id),
                 ("ID PAGE", page_id),
+                ("Mã", code),
                 ("Tên Campaign", campaign_name),
                 ("Ngân sách", budget_raw),
                 ("ID POST", post_id),
@@ -168,14 +225,32 @@ def read_rows(worksheet: gspread.Worksheet) -> list[SheetRow]:
             write_result(worksheet, row_number, f"Lỗi: {e}")
             continue
 
+        # Ngày/Giờ là tuỳ chọn - để trống cả 2 thì không đặt lịch (chạy ngay khi bật)
+        start_time: str | None = None
+        if date_raw or time_raw:
+            if not (date_raw and time_raw):
+                write_result(
+                    worksheet,
+                    row_number,
+                    "Lỗi: cần điền đủ cả Ngày và giờ, hoặc để trống cả 2",
+                )
+                continue
+            try:
+                start_time = _parse_start_time(date_raw, time_raw)
+            except ValueError as e:
+                write_result(worksheet, row_number, f"Lỗi: {e}")
+                continue
+
         rows.append(
             SheetRow(
                 row_number=row_number,
                 ad_account_id=ad_account_id,
                 page_id=page_id,
+                code=code,
                 campaign_name=campaign_name,
                 daily_budget=daily_budget,
                 post_id=post_id,
+                start_time=start_time,
             )
         )
 
@@ -183,5 +258,5 @@ def read_rows(worksheet: gspread.Worksheet) -> list[SheetRow]:
 
 
 def write_result(worksheet: gspread.Worksheet, row_number: int, message: str) -> None:
-    """Ghi kết quả (thành công/lỗi) vào cột Kết quả (P) của đúng dòng đó."""
+    """Ghi kết quả (thành công/lỗi) vào cột Kết quả (R) của đúng dòng đó."""
     worksheet.update_acell(f"{COL_RESULT}{row_number}", message)
