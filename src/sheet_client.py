@@ -5,6 +5,11 @@ ngược lại vào sheet sau khi chạy.
 Xác thực bằng Service Account (không cần đăng nhập tay, sheet có thể để riêng tư -
 chỉ cần share sheet cho email của Service Account).
 
+Credentials được đọc TRỰC TIẾP từ biến môi trường GOOGLE_CREDENTIALS (nội dung
+JSON key dạng text, y hệt cách đặt secret trên GitHub Actions) - không ghi ra
+file trung gian, tránh lỗi hỏng định dạng JSON (ký tự \\r, encoding...) khi ghi
+qua shell.
+
 Cấu trúc cột đang dùng trong sheet (xem README phần Google Sheet):
     A = ID tài khoản (Ad Account ID)
     B = ID PAGE
@@ -13,6 +18,7 @@ Cấu trúc cột đang dùng trong sheet (xem README phần Google Sheet):
     O = ID POST (bài viết có sẵn trên Page dùng làm creative)
     P = Kết quả (script tự ghi "Thành công - ..." hoặc "Lỗi: ...")
 """
+import json
 import os
 import re
 from dataclasses import dataclass
@@ -20,7 +26,10 @@ from dataclasses import dataclass
 import gspread
 from google.oauth2.service_account import Credentials
 
-SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+SCOPES = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive",
+]
 
 # Cột trong sheet - sửa ở đây nếu sau này bạn đổi vị trí cột trong Google Sheet
 COL_AD_ACCOUNT_ID = "A"
@@ -45,11 +54,30 @@ class SheetRow:
 
 
 def _get_client() -> gspread.Client:
+    """
+    Ưu tiên đọc credentials từ GOOGLE_CREDENTIALS (nội dung JSON dạng text,
+    dùng cho GitHub Actions secret). Nếu không có, fallback sang
+    GOOGLE_SERVICE_ACCOUNT_FILE (đường dẫn file JSON, dùng khi chạy local với
+    file key sẵn trên máy) để tương thích ngược.
+    """
+    raw_json = os.getenv("GOOGLE_CREDENTIALS")
+    if raw_json:
+        try:
+            info = json.loads(raw_json)
+        except json.JSONDecodeError as e:
+            raise ValueError(
+                f"GOOGLE_CREDENTIALS không phải JSON hợp lệ: {e}. "
+                "Kiểm tra lại đã dán ĐÚNG NGUYÊN nội dung file JSON key vào secret chưa."
+            ) from e
+        creds = Credentials.from_service_account_info(info, scopes=SCOPES)
+        return gspread.authorize(creds)
+
     key_path = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE")
     if not key_path:
         raise EnvironmentError(
-            "Thiếu GOOGLE_SERVICE_ACCOUNT_FILE trong .env (đường dẫn tới file "
-            "JSON key của Service Account). Xem README phần 'Kết nối Google Sheet'."
+            "Thiếu credentials Google: cần GOOGLE_CREDENTIALS (nội dung JSON) "
+            "hoặc GOOGLE_SERVICE_ACCOUNT_FILE (đường dẫn file JSON). "
+            "Xem README phần 'Kết nối Google Sheet'."
         )
     if not os.path.exists(key_path):
         raise FileNotFoundError(f"Không tìm thấy file key Service Account: {key_path}")
