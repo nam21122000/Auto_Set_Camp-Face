@@ -50,7 +50,6 @@ SHEET_CAMPAIGN_TEMPLATE: dict = {
             "ads": [
                 {
                     "status": "ACTIVE",
-                     "call_to_action": "MESSAGE_PAGE",
                 },
             ],
         },
@@ -196,9 +195,6 @@ def process_campaign_config(account, camp_cfg: dict, dry_run: bool = False) -> d
                     else adset_cfg.get("bid_strategy", "LOWEST_COST_WITHOUT_CAP")
                 ),
                 bid_amount=adset_cfg.get("bid_amount"),
-                # Đặt lịch bắt đầu chạy (VD lấy từ cột Ngày/giờ trong Google
-                # Sheet) - để trống nếu muốn chạy ngay khi AdSet ở trạng thái ACTIVE.
-                start_time=adset_cfg.get("start_time"),
                 # Chỉ dùng promoted_object khi tự khai báo rõ trong config
                 # (VD chạy chiến dịch Lượt thích Trang) - KHÔNG tự suy ra,
                 # vì dễ khiến Facebook hiểu nhầm sang loại chiến dịch khác.
@@ -258,13 +254,11 @@ def _build_campaign_config_from_row(row: "sheet_client.SheetRow") -> dict:
     cfg["daily_budget"] = row.daily_budget
 
     adset_cfg = cfg["adsets"][0]
-    adset_cfg["name"] = f"AdSet - {row.code}"
+    adset_cfg["name"] = f"AdSet - {row.campaign_name}"
     adset_cfg["promoted_object"] = {"page_id": row.page_id}
-    if row.start_time:
-        adset_cfg["start_time"] = row.start_time
 
     ad_cfg = adset_cfg["ads"][0]
-    ad_cfg["name"] = f"Ad - {row.code}"
+    ad_cfg["name"] = f"Ad - {row.campaign_name}"
     ad_cfg["page_id"] = row.page_id
     ad_cfg["existing_post_id"] = row.post_id
 
