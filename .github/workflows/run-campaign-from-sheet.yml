@@ -1,0 +1,48 @@
+name: Tạo Campaign từ Google Sheet
+
+# Chạy thủ công bằng cách bấm nút "Run workflow" trong tab Actions trên GitHub
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Chỉ chạy thử, không tạo thật (true/false)"
+        required: false
+        default: "false"
+
+jobs:
+  run-campaign-from-sheet:
+    runs-on: ubuntu-latest
+    env:
+      FB_APP_ID: ${{ secrets.FB_APP_ID }}
+      FB_APP_SECRET: ${{ secrets.FB_APP_SECRET }}
+      FB_ACCESS_TOKEN: ${{ secrets.FB_ACCESS_TOKEN }}
+      GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+      GOOGLE_SHEET_TAB: ${{ secrets.GOOGLE_SHEET_TAB }}
+      # File JSON key được ghi ra ở bước "Tạo file Service Account JSON" bên dưới
+      GOOGLE_SERVICE_ACCOUNT_FILE: service-account.json
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cài đặt Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cài thư viện
+        run: pip install -r requirements.txt
+
+      - name: Tạo file Service Account JSON từ secret
+        run: echo '${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}' > service-account.json
+
+      - name: Chạy script tạo Campaign/AdSet/Ad từ Google Sheet
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            python run.py --from-sheet --dry-run
+          else
+            python run.py --from-sheet
+          fi
+
+      - name: Xoá file Service Account JSON (dọn dẹp, không để lại trên runner)
+        if: always()
+        run: rm -f service-account.json
