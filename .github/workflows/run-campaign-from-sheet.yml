@@ -6,8 +6,8 @@ on:
     inputs:
       dry_run:
         description: "Chỉ chạy thử, không tạo thật (true/false)"
-        required: true
-        default: "true"
+        required: false
+        default: "false"
 
 jobs:
   run-campaign-from-sheet:
