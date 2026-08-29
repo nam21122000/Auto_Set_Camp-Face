@@ -23,6 +23,9 @@ trước khi bật thật.
 ## 2. Lấy thông tin để gọi được API (làm từ đầu)
 
 Bạn cần 4 thông tin: `FB_APP_ID`, `FB_APP_SECRET`, `FB_ACCESS_TOKEN`, `FB_AD_ACCOUNT_ID`.
+Toàn bộ project này chạy qua **GitHub Actions**, nên các giá trị lấy được ở dưới
+sẽ được lưu vào **Secrets** của repo (Settings → Secrets and variables → Actions),
+không lưu vào file `.env` trên máy.
 
 ### Bước 1 — Tạo App trên Meta for Developers
 1. Vào https://developers.facebook.com/apps → **Create App**
@@ -77,12 +80,23 @@ developer, tester) mới gọi được API. Muốn dùng rộng rãi cần **Ap
 ```bash
 git clone <repo-cua-ban>
 cd fb-ads-automation
-
-python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
-
-pip install -r requirements.txt
 ```
+
+Project này chạy qua GitHub Actions nên không cần cài Python/thư viện trên máy —
+workflow tự cài khi chạy. Việc cần làm ở bước này là khai báo 4 giá trị đã lấy ở
+Mục 2 vào **Secrets** của repo:
+
+Repo trên GitHub → **Settings → Secrets and variables → Actions → tab Secrets**
+→ **New repository secret**, tạo lần lượt:
+- `FB_APP_ID`
+- `FB_APP_SECRET`
+- `FB_ACCESS_TOKEN`
+- `FB_AD_ACCOUNT_ID` (chỉ cần khi chạy chế độ file YAML ở Mục 4-6; chế độ
+  Google Sheet ở Mục 4b lấy Ad Account ID riêng theo từng dòng nên không cần)
+
+> Muốn chạy thử trên máy cá nhân (không qua Actions) vẫn được — chỉ cần set các
+> biến này thành biến môi trường (environment variable) của shell trước khi chạy
+> `python run.py`, không bắt buộc phải tạo file `.env`.
 
 ---
 
@@ -113,8 +127,82 @@ Xem đầy đủ ví dụ và comment giải thích trong `config/campaigns.exam
 
 ---
 
+## 4b. Tạo nhiều campaign cùng lúc từ Google Sheet (thay vì file YAML)
+
+Nếu bạn có 1 Google Sheet liệt kê nhiều campaign cần tạo (mỗi dòng = 1 campaign),
+script có thể đọc trực tiếp từ đó thay vì phải sửa tay file YAML mỗi lần.
+
+**Cấu trúc cột đang được script đọc** (đúng theo sheet `Auto_Create_Campaign`):
+
+| Cột | Ý nghĩa | Bắt buộc |
+|---|---|---|
+| A | ID tài khoản (Ad Account ID) | có |
+| B | ID PAGE | có |
+| H | Tên Campaign | có |
+| I | Ngân sách chiến dịch (VNĐ/ngày, viết `3.000.000 đ` hay `3000000` đều được) | có |
+| O | ID POST (bài viết có sẵn trên Page, dùng làm nội dung quảng cáo) | có |
+| P | Kết quả — **để trống**, script tự ghi `Thành công - ...` hoặc `Lỗi: ...` sau khi chạy | không (script tự điền) |
+
+Mỗi dòng sẽ tạo ra đúng **1 Campaign → 1 AdSet → 1 Ad**, dùng chung 1 cấu hình
+mặc định cho targeting/objective (giống mẫu ở Mục 4, đối tượng Việt Nam 27-55
+tuổi, nữ, tối ưu Tin nhắn Messenger). Muốn đổi cấu hình mặc định này, sửa biến
+`SHEET_CAMPAIGN_TEMPLATE` trong `src/cli.py`.
+
+Dòng nào cột **Kết quả (P)** đã có giá trị sẽ được **bỏ qua** ở lần chạy sau —
+để tránh tạo trùng campaign khi chạy lại script nhiều lần. Muốn chạy lại 1 dòng,
+xoá nội dung ô Kết quả của dòng đó rồi chạy script lại.
+
+### Bước 1 — Tạo Service Account (để script tự đọc/ghi sheet, không cần đăng nhập tay)
+1. Vào [Google Cloud Console](https://console.cloud.google.com/) → tạo project mới (hoặc dùng project có sẵn)
+2. Vào **APIs & Services → Library** → bật **Google Sheets API**
+3. Vào **APIs & Services → Credentials** → **Create Credentials → Service Account**
+   → đặt tên tuỳ ý → Create
+4. Vào Service Account vừa tạo → tab **Keys** → **Add Key → Create new key** →
+   chọn **JSON** → tải file JSON key về máy (chỉ cần tạm để lấy nội dung dán vào
+   Secret ở Bước 3 bên dưới, xong có thể xoá khỏi máy, không cần giữ trong dự án)
+5. Copy **email** của Service Account (dạng `ten-bot@ten-project.iam.gserviceaccount.com`,
+   xem trong tab Details)
+
+### Bước 2 — Share Google Sheet cho Service Account
+1. Mở Google Sheet của bạn → nút **Share (Chia sẻ)**
+2. Dán email Service Account ở Bước 1 vào → chọn quyền **Editor (Người chỉnh sửa)**
+   (cần quyền ghi vì script phải ghi kết quả vào cột P) → Send/Share
+
+### Bước 3 — Khai báo Secrets trên GitHub
+Repo trên GitHub → **Settings → Secrets and variables → Actions → tab Secrets**
+→ **New repository secret**, tạo thêm:
+```
+GOOGLE_SHEET_ID = 1Wyw1Ot1KNeX5kQWyO9XgRWgjKdNN2hjfEPiELWAiTAc
+GOOGLE_SHEET_TAB = Data
+GOOGLE_SERVICE_ACCOUNT_JSON = <dán nguyên nội dung file service-account.json>
+```
+`GOOGLE_SHEET_ID` lấy từ URL sheet, đoạn giữa `/d/` và `/edit`.
+`GOOGLE_SHEET_TAB` là tên tab chứa dữ liệu (theo ảnh mẫu là tab `Data`).
+`GOOGLE_SERVICE_ACCOUNT_JSON` là **toàn bộ nội dung** file JSON key tải về ở
+Bước 1 (mở file bằng Notepad/VSCode, copy hết dán vào Value) — không phải đường
+dẫn file, vì Secrets chỉ lưu được text.
+
+### Bước 4 — Chạy
+Vào tab **Actions** trên GitHub → chọn workflow **"Tạo Campaign từ Google Sheet"**
+→ **Run workflow** → chọn `dry_run = true` để xem thử trước, hoặc `false` để chạy
+thật. Workflow (`.github/workflows/run-campaign-from-sheet.yml`) sẽ tự đọc các
+Secrets ở trên, ghi `GOOGLE_SERVICE_ACCOUNT_JSON` ra thành file tạm rồi chạy
+`python run.py --from-sheet`, xoá file tạm sau khi chạy xong.
+
+Muốn chạy trên máy cá nhân thay vì Actions: set 3 secrets trên thành biến môi
+trường của shell (`GOOGLE_SERVICE_ACCOUNT_FILE` trỏ tới đường dẫn file JSON thật
+trên máy), rồi chạy:
+```bash
+python run.py --from-sheet --dry-run
+python run.py --from-sheet
+```
+
+---
+
 ## 5. Chạy thử (dry-run) trước khi tạo thật
 
+Chạy qua GitHub Actions: tab **Actions** → chọn workflow **"Tạo Campaign Facebook Ads"**
+→ **Run workflow** → để `dry_run = true`. Hoặc chạy local:
 ```bash
 python run.py config/campaigns.yaml --dry-run
 ```
@@ -123,6 +211,7 @@ giúp bạn kiểm tra file YAML có đúng cấu trúc không trước khi tố
 
 ## 6. Chạy thật
 
+Chạy qua GitHub Actions: chọn `dry_run = false` khi Run workflow. Hoặc chạy local:
 ```bash
 python run.py config/campaigns.yaml
 ```
@@ -142,13 +231,15 @@ fb-ads-automation/
 ├── config/
 │   └── campaigns.example.yaml
 ├── assets/                # để ảnh/video local dùng cho ad ở đây
+├── .github/workflows/     # 2 workflow: chạy từ YAML và chạy từ Google Sheet
 └── src/
     ├── fb_client.py       # khởi tạo kết nối API
     ├── campaign.py        # tạo Campaign
     ├── adset.py            # tạo Ad Set
     ├── creative.py         # upload ảnh/video + tạo Ad Creative
     ├── ad.py                # tạo Ad
-    └── cli.py               # đọc YAML và chạy toàn bộ pipeline
+    ├── sheet_client.py      # đọc/ghi Google Sheet (chế độ --from-sheet)
+    └── cli.py               # đọc YAML hoặc Google Sheet và chạy toàn bộ pipeline
 ```
 
 ---
@@ -177,7 +268,9 @@ git push -u origin main
 
 ## 9. Lưu ý quan trọng
 
-  quản lý tài khoản quảng cáo của bạn (`.gitignore` đã chặn sẵn).
+- **Chỉ lưu access token / key trong GitHub Secrets**, không ghi thẳng vào code hay
+  commit lên repo dưới bất kỳ dạng nào — lộ ra ai cũng chiếm được quyền quản lý
+  tài khoản quảng cáo và Google Sheet của bạn.
 - Rate limit: Marketing API giới hạn số request/giờ theo tier của app — nếu tạo
   số lượng lớn campaign cùng lúc, nên thêm độ trễ (`time.sleep`) giữa các lần gọi.
 - Facebook thường xuyên rà soát để tránh tạo hàng loạt nội dung trùng lặp/spam —
