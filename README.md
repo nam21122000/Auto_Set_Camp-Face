@@ -174,11 +174,11 @@ Repo trên GitHub → **Settings → Secrets and variables → Actions → tab S
 ```
 GOOGLE_SHEET_ID = 1Wyw1Ot1KNeX5kQWyO9XgRWgjKdNN2hjfEPiELWAiTAc
 GOOGLE_SHEET_TAB = Data
-GOOGLE_SERVICE_ACCOUNT_JSON = <dán nguyên nội dung file service-account.json>
+GOOGLE_CREDENTIALS = <dán nguyên nội dung file service-account.json>
 ```
 `GOOGLE_SHEET_ID` lấy từ URL sheet, đoạn giữa `/d/` và `/edit`.
 `GOOGLE_SHEET_TAB` là tên tab chứa dữ liệu (theo ảnh mẫu là tab `Data`).
-`GOOGLE_SERVICE_ACCOUNT_JSON` là **toàn bộ nội dung** file JSON key tải về ở
+`GOOGLE_CREDENTIALS` là **toàn bộ nội dung** file JSON key tải về ở
 Bước 1 (mở file bằng Notepad/VSCode, copy hết dán vào Value) — không phải đường
 dẫn file, vì Secrets chỉ lưu được text.
 
@@ -186,7 +186,7 @@ dẫn file, vì Secrets chỉ lưu được text.
 Vào tab **Actions** trên GitHub → chọn workflow **"Tạo Campaign từ Google Sheet"**
 → **Run workflow** → chọn `dry_run = true` để xem thử trước, hoặc `false` để chạy
 thật. Workflow (`.github/workflows/run-campaign-from-sheet.yml`) sẽ tự đọc các
-Secrets ở trên, ghi `GOOGLE_SERVICE_ACCOUNT_JSON` ra thành file tạm rồi chạy
+Secrets ở trên, ghi `GOOGLE_CREDENTIALS` ra thành file tạm rồi chạy
 `python run.py --from-sheet`, xoá file tạm sau khi chạy xong.
 
 Muốn chạy trên máy cá nhân thay vì Actions: set 3 secrets trên thành biến môi
