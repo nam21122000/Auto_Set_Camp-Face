@@ -262,7 +262,6 @@ def _build_campaign_config_from_row(row: "sheet_client.SheetRow") -> dict:
     ad_cfg["name"] = f"Ad - {row.campaign_name}"
     ad_cfg["page_id"] = row.page_id
     ad_cfg["existing_post_id"] = row.post_id
-    ad_cfg["call_to_action"] = "MESSAGE_PAGE"
 
     return cfg
 
