@@ -56,10 +56,10 @@ class SheetRow:
     ad_account_id: str
     page_id: str
     campaign_name: str
-    group_ad_name: str | None = None 
     daily_budget: int
     post_id: str
     schedule: str | None = None
+    group_ad_name: str | None = None 
 
 def _get_client() -> gspread.Client:
     """
