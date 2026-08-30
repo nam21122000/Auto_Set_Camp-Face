@@ -18,6 +18,7 @@ Cấu trúc cột đang dùng trong sheet (xem README phần Google Sheet):
     K = Tên Campaign
     L = Ngân sách chiến dịch (VNĐ/ngày, có thể ghi dạng "3.000.000 đ")
     Q = ID POST (bài viết có sẵn trên Page dùng làm creative)
+    R = mẫu tin nhắn
     R = Kết quả (script tự ghi "Thành công - ..." hoặc "Lỗi: ...")
 """
 import json
@@ -44,7 +45,8 @@ COL_CAMPAIGN_NAME = "K"
 COL_GROUP_AD_NAME = "E" 
 COL_DAILY_BUDGET = "L"
 COL_POST_ID = "Q"
-COL_RESULT = "r"
+COL_MESSAGE_TEMPLATE = "R"
+COL_RESULT = "s"
 
 HEADER_ROW = 1
 FIRST_DATA_ROW = 2
@@ -60,6 +62,7 @@ class SheetRow:
     post_id: str
     schedule: str | None = None
     group_ad_name: str | None = None 
+    message_template_name: str | None = None
 
 def _get_client() -> gspread.Client:
     """
@@ -167,6 +170,7 @@ def read_rows(worksheet: gspread.Worksheet) -> list[SheetRow]:
     idx_schedule_date = _col_to_index(COL_SCHEDULE_DATE)
     idx_schedule_time = _col_to_index(COL_SCHEDULE_TIME) 
     idx_post = _col_to_index(COL_POST_ID)
+    idx_message_template = _col_to_index(COL_MESSAGE_TEMPLATE)
     idx_result = _col_to_index(COL_RESULT)
 
     def cell(row: list[str], idx: int) -> str:
@@ -182,6 +186,7 @@ def read_rows(worksheet: gspread.Worksheet) -> list[SheetRow]:
         schedule_date_raw = cell(row, idx_schedule_date) 
         schedule_time_raw = cell(row, idx_schedule_time) 
         post_id = cell(row, idx_post)
+        message_template_name = cell(row, idx_message_template)
         result = cell(row, idx_result)
 
         if not any([ad_account_id, page_id, campaign_name, budget_raw, post_id]):
@@ -222,6 +227,7 @@ def read_rows(worksheet: gspread.Worksheet) -> list[SheetRow]:
                 daily_budget=daily_budget,
                 post_id=post_id,
                 schedule=schedule,
+                message_template_name=message_template_name or None,
             )
         )
 
