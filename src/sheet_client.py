@@ -33,11 +33,11 @@ SCOPES = [
 
 # Cột trong sheet - sửa ở đây nếu sau này bạn đổi vị trí cột trong Google Sheet
 COL_AD_ACCOUNT_ID = "A"
-COL_PAGE_ID = "B"
-COL_CAMPAIGN_NAME = "H"
-COL_DAILY_BUDGET = "I"
-COL_POST_ID = "O"
-COL_RESULT = "P"
+COL_PAGE_ID = "C"
+COL_CAMPAIGN_NAME = "K"
+COL_DAILY_BUDGET = "L"
+COL_POST_ID = "Q"
+COL_RESULT = "r"
 
 HEADER_ROW = 1
 FIRST_DATA_ROW = 2
