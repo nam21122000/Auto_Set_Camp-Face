@@ -24,6 +24,7 @@ from src.creative import (
 )
 from src.fb_client import get_ad_account, init_api
 from src import sheet_client
+from src.message_templates import get_template_json
 
 # Cấu hình mặc định (giữ nguyên như mẫu trước đây trong config/campaigns.yaml)
 # dùng chung cho MỌI campaign được tạo từ Google Sheet. Chỉ tên campaign, ngân
@@ -84,6 +85,7 @@ def _build_creative(account, ad_cfg: dict):
             post_id=ad_cfg["existing_post_id"],
             name=name,
             call_to_action_type=ad_cfg.get("call_to_action"),
+            page_welcome_message=ad_cfg.get("page_welcome_message"),
         )
 
     if ad_cfg.get("existing_video_id"):
@@ -264,6 +266,8 @@ def _build_campaign_config_from_row(row: "sheet_client.SheetRow") -> dict:
     ad_cfg["name"] = row.group_ad_name or f"Ad - {row.campaign_name}"
     ad_cfg["page_id"] = row.page_id
     ad_cfg["existing_post_id"] = row.post_id
+    if row.message_template_name:
+        ad_cfg["page_welcome_message"] = get_template_json(row.message_template_name)
 
     return cfg
 
