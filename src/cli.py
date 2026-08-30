@@ -195,6 +195,7 @@ def process_campaign_config(account, camp_cfg: dict, dry_run: bool = False) -> d
                     else adset_cfg.get("bid_strategy", "LOWEST_COST_WITHOUT_CAP")
                 ),
                 bid_amount=adset_cfg.get("bid_amount"),
+                start_time=adset_cfg.get("start_time"),
                 # Chỉ dùng promoted_object khi tự khai báo rõ trong config
                 # (VD chạy chiến dịch Lượt thích Trang) - KHÔNG tự suy ra,
                 # vì dễ khiến Facebook hiểu nhầm sang loại chiến dịch khác.
@@ -256,6 +257,8 @@ def _build_campaign_config_from_row(row: "sheet_client.SheetRow") -> dict:
     adset_cfg = cfg["adsets"][0]
     adset_cfg["name"] = f"AdSet - {row.campaign_name}"
     adset_cfg["promoted_object"] = {"page_id": row.page_id}
+    if row.schedule:
+    adset_cfg["start_time"] = row.schedule
 
     ad_cfg = adset_cfg["ads"][0]
     ad_cfg["name"] = f"Ad - {row.campaign_name}"
