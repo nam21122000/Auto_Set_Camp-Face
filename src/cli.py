@@ -258,7 +258,7 @@ def _build_campaign_config_from_row(row: "sheet_client.SheetRow") -> dict:
     adset_cfg["name"] = f"AdSet - {row.campaign_name}"
     adset_cfg["promoted_object"] = {"page_id": row.page_id}
     if row.schedule:
-    adset_cfg["start_time"] = row.schedule
+        adset_cfg["start_time"] = row.schedule
 
     ad_cfg = adset_cfg["ads"][0]
     ad_cfg["name"] = f"Ad - {row.campaign_name}"
