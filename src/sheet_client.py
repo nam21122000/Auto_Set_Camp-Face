@@ -12,16 +12,20 @@ qua shell.
 
 Cấu trúc cột đang dùng trong sheet (xem README phần Google Sheet):
     A = ID tài khoản (Ad Account ID)
-    B = ID PAGE
-    H = Tên Campaign
-    I = Ngân sách chiến dịch (VNĐ/ngày, có thể ghi dạng "3.000.000 đ")
-    O = ID POST (bài viết có sẵn trên Page dùng làm creative)
-    P = Kết quả (script tự ghi "Thành công - ..." hoặc "Lỗi: ...")
+    C = ID PAGE
+    H = Ngày chạy
+    I = giờ chạy
+    K = Tên Campaign
+    L = Ngân sách chiến dịch (VNĐ/ngày, có thể ghi dạng "3.000.000 đ")
+    Q = ID POST (bài viết có sẵn trên Page dùng làm creative)
+    R = Kết quả (script tự ghi "Thành công - ..." hoặc "Lỗi: ...")
 """
 import json
 import os
 import re
 from dataclasses import dataclass
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import gspread
 from google.oauth2.service_account import Credentials
@@ -34,6 +38,8 @@ SCOPES = [
 # Cột trong sheet - sửa ở đây nếu sau này bạn đổi vị trí cột trong Google Sheet
 COL_AD_ACCOUNT_ID = "A"
 COL_PAGE_ID = "C"
+COL_SCHEDULE_DATE = "H"   # Ngày 
+COL_SCHEDULE_TIME = "I"   # giờ 
 COL_CAMPAIGN_NAME = "K"
 COL_DAILY_BUDGET = "L"
 COL_POST_ID = "Q"
@@ -51,7 +57,7 @@ class SheetRow:
     campaign_name: str
     daily_budget: int
     post_id: str
-
+    schedule: str | None = None
 
 def _get_client() -> gspread.Client:
     """
@@ -104,7 +110,36 @@ def _parse_budget(raw: str) -> int:
     if not digits:
         raise ValueError(f"không đọc được số tiền từ giá trị '{raw}'")
     return int(digits)
+    
+def _parse_schedule(date_raw: str, time_raw: str) -> str | None:
+    """
+    Ngày 'd/m' (VD: 30/8) + giờ 'HH:MM' (VD: 00:00) -> ISO 8601 có timezone.
+    Ngày không có năm -> lấy năm hiện tại; nếu ngày đó đã qua trong năm nay
+    thì tự chuyển sang năm sau (tránh đặt lịch chạy vào quá khứ).
+    Bỏ trống cả 2 cột -> chạy ngay (None).
+    """
+    date_raw = (date_raw or "").strip()
+    time_raw = (time_raw or "").strip()
+    if not date_raw and not time_raw:
+        return None
+    if not date_raw or not time_raw:
+        raise ValueError("lịch chạy thiếu Ngày hoặc giờ (phải điền cả 2 hoặc để trống cả 2)")
 
+    try:
+        day, month = (int(x) for x in date_raw.split("/"))
+        hour, minute = (int(x) for x in time_raw.split(":"))
+    except ValueError as e:
+        raise ValueError(
+            f"lịch chạy '{date_raw} {time_raw}' sai định dạng "
+            "(Ngày phải là d/m, giờ phải là HH:MM)"
+        ) from e
+
+    now = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
+    dt = datetime(now.year, month, day, hour, minute, tzinfo=ZoneInfo("Asia/Ho_Chi_Minh"))
+    if dt < now:
+        dt = dt.replace(year=now.year + 1)
+
+    return dt.strftime("%Y-%m-%dT%H:%M:%S%z")
 
 def _col_to_index(col_letter: str) -> int:
     return gspread.utils.a1_to_rowcol(f"{col_letter}1")[1] - 1
@@ -126,6 +161,8 @@ def read_rows(worksheet: gspread.Worksheet) -> list[SheetRow]:
     idx_page = _col_to_index(COL_PAGE_ID)
     idx_name = _col_to_index(COL_CAMPAIGN_NAME)
     idx_budget = _col_to_index(COL_DAILY_BUDGET)
+    idx_schedule_date = _col_to_index(COL_SCHEDULE_DATE)
+    idx_schedule_time = _col_to_index(COL_SCHEDULE_TIME) 
     idx_post = _col_to_index(COL_POST_ID)
     idx_result = _col_to_index(COL_RESULT)
 
@@ -138,6 +175,8 @@ def read_rows(worksheet: gspread.Worksheet) -> list[SheetRow]:
         page_id = cell(row, idx_page)
         campaign_name = cell(row, idx_name)
         budget_raw = cell(row, idx_budget)
+        schedule_date_raw = cell(row, idx_schedule_date) 
+        schedule_time_raw = cell(row, idx_schedule_time) 
         post_id = cell(row, idx_post)
         result = cell(row, idx_result)
 
@@ -164,6 +203,7 @@ def read_rows(worksheet: gspread.Worksheet) -> list[SheetRow]:
 
         try:
             daily_budget = _parse_budget(budget_raw)
+            schedule = _parse_schedule(schedule_date_raw, schedule_time_raw)
         except ValueError as e:
             write_result(worksheet, row_number, f"Lỗi: {e}")
             continue
@@ -176,6 +216,7 @@ def read_rows(worksheet: gspread.Worksheet) -> list[SheetRow]:
                 campaign_name=campaign_name,
                 daily_budget=daily_budget,
                 post_id=post_id,
+                schedule=schedule,
             )
         )
 
