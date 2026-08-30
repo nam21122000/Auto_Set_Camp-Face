@@ -41,6 +41,7 @@ COL_PAGE_ID = "C"
 COL_SCHEDULE_DATE = "H"   # Ngày 
 COL_SCHEDULE_TIME = "I"   # giờ 
 COL_CAMPAIGN_NAME = "K"
+COL_GROUP_AD_NAME = "E" 
 COL_DAILY_BUDGET = "L"
 COL_POST_ID = "Q"
 COL_RESULT = "r"
@@ -55,6 +56,7 @@ class SheetRow:
     ad_account_id: str
     page_id: str
     campaign_name: str
+    group_ad_name: str | None = None 
     daily_budget: int
     post_id: str
     schedule: str | None = None
@@ -160,6 +162,7 @@ def read_rows(worksheet: gspread.Worksheet) -> list[SheetRow]:
     idx_account = _col_to_index(COL_AD_ACCOUNT_ID)
     idx_page = _col_to_index(COL_PAGE_ID)
     idx_name = _col_to_index(COL_CAMPAIGN_NAME)
+    idx_group_ad_name = _col_to_index(COL_GROUP_AD_NAME)
     idx_budget = _col_to_index(COL_DAILY_BUDGET)
     idx_schedule_date = _col_to_index(COL_SCHEDULE_DATE)
     idx_schedule_time = _col_to_index(COL_SCHEDULE_TIME) 
@@ -174,6 +177,7 @@ def read_rows(worksheet: gspread.Worksheet) -> list[SheetRow]:
         ad_account_id = cell(row, idx_account)
         page_id = cell(row, idx_page)
         campaign_name = cell(row, idx_name)
+        group_ad_name = cell(row, idx_group_ad_name)
         budget_raw = cell(row, idx_budget)
         schedule_date_raw = cell(row, idx_schedule_date) 
         schedule_time_raw = cell(row, idx_schedule_time) 
@@ -214,6 +218,7 @@ def read_rows(worksheet: gspread.Worksheet) -> list[SheetRow]:
                 ad_account_id=ad_account_id,
                 page_id=page_id,
                 campaign_name=campaign_name,
+                group_ad_name=group_ad_name or None,
                 daily_budget=daily_budget,
                 post_id=post_id,
                 schedule=schedule,
