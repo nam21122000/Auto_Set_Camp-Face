@@ -33,6 +33,7 @@ def create_creative_from_existing_post(
     post_id: str,
     name: str,
     call_to_action_type: str | None = None,
+    page_welcome_message: str | None = None,
 ) -> AdCreative:
     """
     Tạo creative từ 1 bài post đã đăng sẵn trên Fanpage.
@@ -50,6 +51,8 @@ def create_creative_from_existing_post(
     }
     if call_to_action_type:
         params[AdCreative.Field.call_to_action_type] = call_to_action_type
+    if page_welcome_message:
+        params[AdCreative.Field.page_welcome_message] = page_welcome_message 
 
     return account.create_ad_creative(params=params)
 
