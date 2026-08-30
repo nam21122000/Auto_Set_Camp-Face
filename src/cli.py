@@ -50,6 +50,7 @@ SHEET_CAMPAIGN_TEMPLATE: dict = {
             "ads": [
                 {
                     "status": "ACTIVE",
+                    "call_to_action": "MESSAGE_PAGE",
                 },
             ],
         },
